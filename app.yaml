@@ -5,8 +5,13 @@ api_version: 1
 threadsafe: true
 
 handlers:
-  - url: /.*
-    script: bloghw.app
+
+- url: /css
+  static_dir: css
+  
+- url: /.*
+  script: bloghw.app
+
 
 libraries:
 - name: jinja2
