@@ -151,11 +151,23 @@ class NewPost(MainHandler):
             self.redirect('/%s' % str(p.key().id()))
         else:
             error = "subject and content, please!"
-            self.render("newpost.html", subject=subject, content=content, error=error)
+            self.render("newpost.html", subject=subject, content=content,
+                        error=error)
+
+class EditPost(MainHandler):
+    def get(self, post_id):
+        if self.user:
+            key = db.Key.from_path('Post', int(post_id), parent=blog_key())
+            post = db.get(key)
+            if post.user_id == self.user.key().id():
+                self.render("edit.html", subject=post.subject,
+                            content=post.content)
+            else:
+                error = "You don't have access to this function!"
 
 class BlogHome(MainHandler):
     def get(self):
-        posts = Post.all().order('-created')
+        posts = db.GqlQuery('select * from Post order by created desc limit 10')
         self.render('home.html', posts = posts)
 
 USER_RE = re.compile(r"^[a-zA-Z0-9_-]{3,20}$")
@@ -258,4 +270,5 @@ app = webapp2.WSGIApplication([('/', BlogHome),
                                ('/newpost', NewPost),
                                ('/welcome', Welcome),
                                ('/([0-9]+)', PostPage),
+                               ('/([0-9]+)/edit', EditPost),
                                ], debug=True)

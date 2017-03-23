@@ -7,9 +7,15 @@
     <div class="post-date">
       {{p.created.strftime("%b %d, %Y")}}
     </div>
+    <div>
+      {% if user %}
+        (<a class="edit-link" href="{{'/%s/edit' % id}}">Edit</a>)
+      {% endif %}
+    </div>
   </div>
 
   <div class="post-content">
     {{p._render_text | safe}}
+    {{p.content}}
   </div>
 </div>
