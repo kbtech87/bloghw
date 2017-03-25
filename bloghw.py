@@ -115,19 +115,19 @@ class Post(db.Model):
     content = db.TextProperty(required = True)
     created = db.DateTimeProperty(auto_now_add = True)
     last_modified = db.DateTimeProperty(auto_now = True)
+    author = db.StringProperty(required = True)
 
     def render(self):
         self.render_text = self.content.replace('\n', '<br>')
         return render_str('post.html', p = self)
 
-class PostPage(MainHandler):
+class PostPage(MainHandler): 
     def get(self, post_id):
         key = db.Key.from_path('Post', int(post_id), parent=blog_key())
         post = db.get(key)
 
         if not post:
             self.error(404)
-            return
 
         self.render("permalink.html", post = post)
 
@@ -144,9 +144,11 @@ class NewPost(MainHandler):
 
         subject = self.request.get('subject')
         content = self.request.get('content')
+        author = self.user.name
 
         if subject and content:
-            p = Post(parent = blog_key(), subject = subject, content = content)
+            p = Post(parent = blog_key(), subject = subject, content = content,
+                     author = author)
             p.put()
             self.redirect('/%s' % str(p.key().id()))
         else:
@@ -161,7 +163,8 @@ class EditPost(MainHandler):
             post = db.get(key)
             if post.user_id == self.user.key().id():
                 self.render("edit.html", subject=post.subject,
-                            content=post.content)
+                            content=post.content,
+                            post_id=post.id)
             else:
                 error = "You don't have access to this function!"
 
@@ -270,5 +273,5 @@ app = webapp2.WSGIApplication([('/', BlogHome),
                                ('/newpost', NewPost),
                                ('/welcome', Welcome),
                                ('/([0-9]+)', PostPage),
-                               ('/([0-9]+)/edit', EditPost),
+                               ('/edit/([0-9]+)', EditPost),
                                ], debug=True)

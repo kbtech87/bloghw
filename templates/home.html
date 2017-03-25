@@ -6,7 +6,16 @@
 
   {% for p in posts %}
     {{ p.render() | safe }}
+    {{ p.author }}
     <br><br>
+    {% if user.name %}
+      {% if p.author == user.name %}
+        <form class= 'edit_button' action='/edit/{{p.key().id()}}'>
+          <input type='submit' value='Edit'>
+        </form>
+      {% endif %}
+    {% endif %}
   {% endfor %}
+
 
 {% endblock %}
