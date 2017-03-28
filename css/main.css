@@ -30,12 +30,22 @@ body {
     text-decoration: none;
 }
 
+.title-link {
+    text-decoration: none;
+    color: black;
+}
+
 .login-link:visited {
     color: gray;
 }
 
 .login-link:hover {
     text-decoration: underline;
+}
+
+.new-link {
+  color: gray;
+  text-decoration: none;
 }
 
 h2 {

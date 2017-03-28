@@ -1,2 +1,24 @@
 {% extends "base.html" %}
-"add functionality"
+
+{% block content %}
+  <h2>edit post</h2>
+
+    <form method="post">
+      <label>
+        <div>subject</div>
+        <input type="text" name="subject" value="{{subject}}">
+      </label>
+
+      <label>
+        <div>blog</div>
+        <textarea name="content">{{content}}</textarea>
+      </label>
+
+      <div class="error">{{error}}</div>
+
+      <input type="submit">
+      <form class='cancel_button' action='/([0-9]+)'>
+        <input type='submit' value='Cancel'>
+      </form>
+    </form>
+{% endblock %}

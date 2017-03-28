@@ -116,6 +116,11 @@ class Post(db.Model):
     created = db.DateTimeProperty(auto_now_add = True)
     last_modified = db.DateTimeProperty(auto_now = True)
     author = db.StringProperty(required = True)
+    liked_by = []
+
+    @property
+    def likes(self):
+        return len(liked_by)
 
     def render(self):
         self.render_text = self.content.replace('\n', '<br>')
@@ -161,12 +166,66 @@ class EditPost(MainHandler):
         if self.user:
             key = db.Key.from_path('Post', int(post_id), parent=blog_key())
             post = db.get(key)
-            if post.user_id == self.user.key().id():
+            if post.author == self.user.name:
                 self.render("edit.html", subject=post.subject,
                             content=post.content,
-                            post_id=post.id)
+                            post_id=post_id)
             else:
-                error = "You don't have access to this function!"
+                self.redirect('/login')
+
+    def post(self, post_id):
+        key = db.Key.from_path('Post', int(post_id), parent=blog_key())
+        post = db.get(key)
+
+        subject = self.request.get('subject')
+        content = self.request.get('content')
+
+        if subject and content:
+            post.subject = subject
+            post.content = content
+            post.put()
+            self.redirect('/%s' % str(post.key().id()))
+        else:
+            error = "subject and content, please!"
+            self.render("edit.html", subject=subject, content=content,
+                        error=error)
+
+class DeletePost(MainHandler):
+    def get(self, post_id):
+        key = db.Key.from_path('Post', int(post_id), parent=blog_key())
+        post = db.get(key)
+        if post.author == self.user.name:
+            post.delete()
+            time.sleep(0.1)
+            self.redirect('/')
+
+        else:
+            self.redirect('/login')
+
+class LikePost(MainHandler):
+    def get(self, post_id):
+        key = db.Key.from_path('Post', int(post_id), parent=blog_key())
+        post = db.get(key)
+        if post.author == self.user.name:
+            error = "You cannot like your own posts!"
+            self.render('/', error=error)
+
+    def post(self, post_id):
+        key = db.Key.from_path('Post', int(post_id), parent=blog_key())
+        post = db.get(key)
+        if self.user:
+            if self.user.name in post.liked_by:
+                post.liked_by.remove(self.user.name)
+                post.put()
+                self.redirect('/')
+
+            else:
+                post.liked_by.append(self.user.name)
+                post.put()
+                self.redirect('/')
+
+        else:
+            self.redirect('/login')
 
 class BlogHome(MainHandler):
     def get(self):
@@ -215,7 +274,7 @@ class Signup(MainHandler):
             have_error = True
 
         if have_error:
-            self.render('signup-form.html', **params)
+            self.render('signup.html', **params)
         else:
             self.done()
 
@@ -274,4 +333,6 @@ app = webapp2.WSGIApplication([('/', BlogHome),
                                ('/welcome', Welcome),
                                ('/([0-9]+)', PostPage),
                                ('/edit/([0-9]+)', EditPost),
+                               ('/deleted/([0-9]+)', DeletePost),
+                               ('/liked/([0-9]+)', LikePost)
                                ], debug=True)

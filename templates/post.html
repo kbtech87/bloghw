@@ -1,13 +1,13 @@
 <div class="post">
   <div class="post-heading">
     <div class="post-title">
-      {{p.subject}}
+      <a class='title-link' href='/{{p.key().id()}}'>{{p.subject}}</a>
     </div>
 
     <div class="post-date">
       {{p.created.strftime("%b %d, %Y")}}
     </div>
-    
+
   </div>
 
   <div class="post-content">

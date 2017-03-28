@@ -13,8 +13,15 @@
         <form class= 'edit_button' action='/edit/{{p.key().id()}}'>
           <input type='submit' value='Edit'>
         </form>
+        <form class= 'delete_button' action='/deleted/{{p.key().id()}}'>
+          <input type='submit' value='Delete'>
+        </form>
+        <form class= 'like_button' action='/liked/{{p.key().id()}}' method= 'POST'>
+          <input type='submit' value='Like'>
+        </form>
       {% endif %}
     {% endif %}
+    {{p.likes}} likes for this post
   {% endfor %}
 
 
