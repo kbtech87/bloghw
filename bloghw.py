@@ -3,6 +3,7 @@ import re
 import random
 import hashlib
 import hmac
+import time
 from string import letters
 
 import webapp2
@@ -116,11 +117,11 @@ class Post(db.Model):
     created = db.DateTimeProperty(auto_now_add = True)
     last_modified = db.DateTimeProperty(auto_now = True)
     author = db.StringProperty(required = True)
-    liked_by = []
+    liked_by = db.ListProperty(str)
 
     @property
     def likes(self):
-        return len(liked_by)
+        return len(self.liked_by)
 
     def render(self):
         self.render_text = self.content.replace('\n', '<br>')
@@ -203,29 +204,25 @@ class DeletePost(MainHandler):
             self.redirect('/login')
 
 class LikePost(MainHandler):
-    def get(self, post_id):
-        key = db.Key.from_path('Post', int(post_id), parent=blog_key())
-        post = db.get(key)
-        if post.author == self.user.name:
-            error = "You cannot like your own posts!"
-            self.render('/', error=error)
-
     def post(self, post_id):
         key = db.Key.from_path('Post', int(post_id), parent=blog_key())
         post = db.get(key)
-        if self.user:
+        if self.user.name != post.author:
             if self.user.name in post.liked_by:
                 post.liked_by.remove(self.user.name)
                 post.put()
+                time.sleep(0.1)
                 self.redirect('/')
 
             else:
                 post.liked_by.append(self.user.name)
                 post.put()
+                time.sleep(0.1)
                 self.redirect('/')
 
         else:
-            self.redirect('/login')
+            error = "You cannot like your own posts!"
+            self.render('home.html', error=error)
 
 class BlogHome(MainHandler):
     def get(self):

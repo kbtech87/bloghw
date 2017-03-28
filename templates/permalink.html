@@ -5,6 +5,9 @@
   {{ post.author }}
   <br><br>
   {% if user.name %}
+    <form class= 'like_button' action='/liked/{{post.key().id()}}' method= 'post'>
+      <input type='submit' value='Like'>
+    </form>
     {% if post.author == user.name %}
       <form class= 'edit_button' action='/edit/{{post.key().id()}}'>
         <input type='submit' value='Edit'>
@@ -12,9 +15,7 @@
       <form class= 'delete_button' action='/deleted/{{post.key().id()}}'>
         <input type='submit' value='Delete'>
       </form>
-      <form class= 'like_button' action='/liked/{{post.key().id()}}' method= 'post'>
-        <input type='submit' value='Like'>
-      </form>
+
 
     {% endif %}
   {% endif %}

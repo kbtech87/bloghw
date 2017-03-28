@@ -9,6 +9,9 @@
     {{ p.author }}
     <br><br>
     {% if user.name %}
+      <form class= 'like_button' action='/liked/{{p.key().id()}}' method= 'POST'>
+        <input type='submit' value='Like'>
+      </form>
       {% if p.author == user.name %}
         <form class= 'edit_button' action='/edit/{{p.key().id()}}'>
           <input type='submit' value='Edit'>
@@ -16,9 +19,7 @@
         <form class= 'delete_button' action='/deleted/{{p.key().id()}}'>
           <input type='submit' value='Delete'>
         </form>
-        <form class= 'like_button' action='/liked/{{p.key().id()}}' method= 'POST'>
-          <input type='submit' value='Like'>
-        </form>
+
       {% endif %}
     {% endif %}
     {{p.likes}} likes for this post
