@@ -16,7 +16,35 @@
         <input type='submit' value='Delete'>
       </form>
 
-
     {% endif %}
   {% endif %}
+
+  {{post.likes}} likes for this post
+
+  <br><br><br><br>
+  <div class='comment-heading'>comments</div>
+  <form class= 'new_comment' action='/newcomment/{{post.key().id()}}'>
+    <input type='submit' value='New Comment'>
+  </form>
+  <br><br>
+  <div class='comments'>
+    {% for c in comments %}
+      {% if c.commentid == post.key().id() %}
+        {{ c.content | safe }}
+        Author: {{ c.author }}
+        <br><br>
+        {% if user.name %}
+          {% if c.author == user.name %}
+            <form class= 'edit_button' action='/editcomment/{{post.key().id()}}'>
+              <input type='submit' value='Edit'>
+            </form>
+            <form class= 'delete_button' action='/deletedcomment/{{post.key().id()}}'>
+              <input type='submit' value='Delete'>
+            </form>
+
+          {% endif %}
+        {% endif %}
+      {% endif %}
+    {% endfor %}
+  </div>
 {% endblock %}

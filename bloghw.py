@@ -135,7 +135,11 @@ class PostPage(MainHandler):
         if not post:
             self.error(404)
 
-        self.render("permalink.html", post = post)
+        
+        comments = Comment.all()
+
+        self.render("permalink.html", post = post, comments = comments) 
+
 
 class NewPost(MainHandler):
     def get(self):
@@ -221,13 +225,84 @@ class LikePost(MainHandler):
                 self.redirect('/')
 
         else:
-            error = "You cannot like your own posts!"
-            self.render('home.html', error=error)
+            self.redirect('/?error=You cannot like your own posts!')
+
+class Comment(db.Model):
+    content = db.TextProperty(required = True)
+    created = db.DateTimeProperty(auto_now_add = True)
+    last_modified = db.DateTimeProperty(auto_now = True)
+    author = db.StringProperty(required = True)
+    commentid = db.IntegerProperty()
+
+    def render(self):
+        self.render_text = self.content.replace('\n', '<br>')
+        return render_str('comment.html', c = self)
+
+class NewComment(MainHandler):
+    def get(self, post_id):
+        key = db.Key.from_path('Post', int(post_id), parent=blog_key())
+        post = db.get(key)
+        if self.user:
+            self.render("newcomment.html")
+        else:
+            self.redirect("/login")
+
+    def post(self, post_id):
+        key = db.Key.from_path('Post', int(post_id), parent=blog_key())
+        post = db.get(key)
+        
+        if not self.user:
+            self.redirect('/')
+
+        content = self.request.get('content')
+        author = self.user.name
+        commentid = int(post.key().id())
+
+        if content:
+            c = Comment(parent = blog_key(), content = content, author = author,
+                        commentid = commentid)
+            c.put()
+            time.sleep(0.1)
+            self.redirect('/%s' % post_id)
+        else:
+            error = " enter your comment, please!"
+            self.render("newcomment.html", content=content, error=error)
+
+class EditComment(MainHandler):
+    def get(self, comment_id):
+        if self.user:
+            key = db.Key.from_path('Comment', int(comment_id),
+                                   parent=blog_key())
+            c = db.get(key)
+            commented = c.content.replace('<br>', '')
+            
+            self.render("editcomment.html", c=c, commented=commented)
+        else:
+            self.redirect('/login')
+
+    def post(self, comment_id):
+        key = db.Key.from_path('Comment', int(comment_id), parent=blog_key())
+        c = db.get(key)
+
+        content = self.request.get('content')
+
+        if  content:
+            c.content = content
+            c.put()
+            self.redirect('/%s' % post_id)
+        else:
+            error = "enter your comment, please!"
+            self.render("editcomment.html", content=content,
+                        error=error)
 
 class BlogHome(MainHandler):
-    def get(self):
+    def render_blog(self):
         posts = db.GqlQuery('select * from Post order by created desc limit 10')
-        self.render('home.html', posts = posts)
+        comments = db.GqlQuery('select * from Comment order by created desc')
+        self.render('home.html', posts = posts, comments=comments)
+
+    def get(self):
+        self.render_blog()
 
 USER_RE = re.compile(r"^[a-zA-Z0-9_-]{3,20}$")
 def valid_username(username):
@@ -331,5 +406,8 @@ app = webapp2.WSGIApplication([('/', BlogHome),
                                ('/([0-9]+)', PostPage),
                                ('/edit/([0-9]+)', EditPost),
                                ('/deleted/([0-9]+)', DeletePost),
-                               ('/liked/([0-9]+)', LikePost)
+                               ('/liked/([0-9]+)', LikePost),
+                               ('/newcomment/([0-9]+)', NewComment),
+                               ('/editcomment/([0-9]+)', EditComment),
+                               #('/deletedcomment/([0-9]+)', DeleteComment)
                                ], debug=True)

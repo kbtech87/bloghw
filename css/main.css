@@ -120,3 +120,8 @@ input[type=submit] {
 .post-content {
     margin-top: 5px;
 }
+
+.comment-heading {
+  font-size: 20px;
+  font-weight: bold;
+}
