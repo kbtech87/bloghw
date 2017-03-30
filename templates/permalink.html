@@ -35,10 +35,10 @@
         <br><br>
         {% if user.name %}
           {% if c.author == user.name %}
-            <form class= 'edit_button' action='/editcomment/{{post.key().id()}}'>
+            <form class= 'edit_button' action='/editcomment/{{c.key().id()}}'>
               <input type='submit' value='Edit'>
             </form>
-            <form class= 'delete_button' action='/deletedcomment/{{post.key().id()}}'>
+            <form class= 'delete_button' action='/deletedcomment/{{c.key().id()}}'>
               <input type='submit' value='Delete'>
             </form>
 

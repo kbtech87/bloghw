@@ -15,11 +15,14 @@ template_dir = os.path.join(os.path.dirname(__file__), 'templates')
 jinja_env = jinja2.Environment(loader = jinja2.FileSystemLoader(template_dir),
                                autoescape = True)
 
-secret = 'randomosity'
-
+# The global function below is for rendering a string.
 def render_str(template, **params):
     t = jinja_env.get_template(template)
     return t.render(params)
+
+# The functions below are for validating password hashing
+
+secret = 'randomosity'
 
 def make_secure_val(val):
     return '%s|%s' % (val, hmac.new(secret, val).hexdigest())
@@ -32,6 +35,8 @@ def check_secure_val(secure_val):
 
 
 class MainHandler(webapp2.RequestHandler):
+    """main class that handles rendering, writing and cookies in all the classes
+    that inherit from it."""
     def write(self, *a, **kw):
         self.response.out.write(*a, **kw)
 
@@ -64,6 +69,8 @@ class MainHandler(webapp2.RequestHandler):
         uid = self.read_secure_cookie('user_id')
         self.user = uid and User.by_id(int(uid))
 
+# The functions below are for hashing and salting to secure passwords.
+
 def make_salt(length = 5):
     return ''.join(random.choice(letters) for x in xrange(length))
 
@@ -80,7 +87,9 @@ def valid_pw(name, password, h):
 def users_key(group = 'default'):
     return db.Key.from_path('users', group)
 
+
 class User(db.Model):
+    """This class designates the database specifics for a user object."""
     name = db.StringProperty(required = True)
     pw_hash = db.StringProperty(required = True)
     email = db.StringProperty()
@@ -112,6 +121,7 @@ def blog_key(name = 'default'):
     return db.Key.from_path('blogs', name)
 
 class Post(db.Model):
+    """This class designates the database specifics for a post object."""
     subject = db.StringProperty(required = True)
     content = db.TextProperty(required = True)
     created = db.DateTimeProperty(auto_now_add = True)
@@ -127,7 +137,8 @@ class Post(db.Model):
         self.render_text = self.content.replace('\n', '<br>')
         return render_str('post.html', p = self)
 
-class PostPage(MainHandler): 
+class PostPage(MainHandler):
+    """Class that renders the page for a specifc blog post."""
     def get(self, post_id):
         key = db.Key.from_path('Post', int(post_id), parent=blog_key())
         post = db.get(key)
@@ -142,6 +153,7 @@ class PostPage(MainHandler):
 
 
 class NewPost(MainHandler):
+    """Class that renders the form for writing a new blog post."""
     def get(self):
         if self.user:
             self.render("newpost.html")
@@ -167,6 +179,7 @@ class NewPost(MainHandler):
                         error=error)
 
 class EditPost(MainHandler):
+    """Class that renders the form to edit an existing blog post."""
     def get(self, post_id):
         if self.user:
             key = db.Key.from_path('Post', int(post_id), parent=blog_key())
@@ -208,6 +221,8 @@ class DeletePost(MainHandler):
             self.redirect('/login')
 
 class LikePost(MainHandler):
+    """Class that handles adding/removing likes for a post and tracking the
+    number of likes it has."""
     def post(self, post_id):
         key = db.Key.from_path('Post', int(post_id), parent=blog_key())
         post = db.get(key)
@@ -228,6 +243,7 @@ class LikePost(MainHandler):
             self.redirect('/?error=You cannot like your own posts!')
 
 class Comment(db.Model):
+    """This class designates the database specifics for a comment object."""
     content = db.TextProperty(required = True)
     created = db.DateTimeProperty(auto_now_add = True)
     last_modified = db.DateTimeProperty(auto_now = True)
@@ -239,6 +255,7 @@ class Comment(db.Model):
         return render_str('comment.html', c = self)
 
 class NewComment(MainHandler):
+    """This class renders the form for entering a new post comment."""
     def get(self, post_id):
         key = db.Key.from_path('Post', int(post_id), parent=blog_key())
         post = db.get(key)
@@ -256,11 +273,11 @@ class NewComment(MainHandler):
 
         content = self.request.get('content')
         author = self.user.name
-        commentid = int(post.key().id())
+        post_id = int(post.key().id())
 
         if content:
             c = Comment(parent = blog_key(), content = content, author = author,
-                        commentid = commentid)
+                        post_id = post_id)
             c.put()
             time.sleep(0.1)
             self.redirect('/%s' % post_id)
@@ -269,14 +286,14 @@ class NewComment(MainHandler):
             self.render("newcomment.html", content=content, error=error)
 
 class EditComment(MainHandler):
+    """Class renders the form for editing an existing post comment."""
     def get(self, comment_id):
         if self.user:
             key = db.Key.from_path('Comment', int(comment_id),
                                    parent=blog_key())
             c = db.get(key)
-            commented = c.content.replace('<br>', '')
             
-            self.render("editcomment.html", c=c, commented=commented)
+            self.render("editcomment.html", c=c, content=c.content)
         else:
             self.redirect('/login')
 
@@ -289,13 +306,14 @@ class EditComment(MainHandler):
         if  content:
             c.content = content
             c.put()
-            self.redirect('/%s' % post_id)
+            self.redirect('/%s' % str(c.post_id))
         else:
             error = "enter your comment, please!"
             self.render("editcomment.html", content=content,
                         error=error)
 
 class BlogHome(MainHandler):
+    """This class renders the main blog page."""
     def render_blog(self):
         posts = db.GqlQuery('select * from Post order by created desc limit 10')
         comments = db.GqlQuery('select * from Comment order by created desc')
@@ -303,6 +321,8 @@ class BlogHome(MainHandler):
 
     def get(self):
         self.render_blog()
+
+#The functions below define and verify valid usernames, passwords and emails.
 
 USER_RE = re.compile(r"^[a-zA-Z0-9_-]{3,20}$")
 def valid_username(username):
@@ -316,7 +336,9 @@ EMAIL_RE = re.compile(r"^[\S]+@[\S]+\.[\S]+$")
 def valid_email(email):
     return email and EMAIL_RE.match(email)
 
+
 class Signup(MainHandler):
+    """Class handles the creation of a new user."""
     def get(self):
         self.render("signup.html")
 
@@ -354,8 +376,9 @@ class Signup(MainHandler):
         raise NotImplementedError
 
 class Register(Signup):
+    """Class confirms that a user doe not already exist and welcomes the new
+    user."""
     def done(self):
-        #make sure the user doesn't already exist
         u = User.by_name(self.username)
         if u:
             msg = 'That user already exists.'
@@ -396,7 +419,7 @@ class Logout(MainHandler):
         self.redirect('/')
 
 
-#url, handler name
+
 app = webapp2.WSGIApplication([('/', BlogHome),
                                ('/signup', Register),
                                ('/login', Login),
