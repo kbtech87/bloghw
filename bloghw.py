@@ -304,12 +304,12 @@ class EditComment(MainHandler):
 
     def post(self, comment_id):
         if self.user:
-            key = db.Key.from_path('Comment', int(comment_id), parent=blog_key())
+            key = db.Key.from_path('Comment', int(comment_id),
+                                   parent=blog_key())
             c = db.get(key)
 
         if c.author == self.user.name:
             content = self.request.get('content')
-            c.post_id = int(comment_id)
     
             if  content:
                 c.content = content
@@ -323,16 +323,18 @@ class EditComment(MainHandler):
             self.redirect('/login')
 
 class DeleteComment(MainHandler):
-    def get(self, comment_id):
-        key = db.Key.from_path('Comment', int(comment_id), parent=blog_key())
-        c = db.get(key)
-        if c.author == self.user.name:
-            c.delete()
-            time.sleep(0.1)
-            self.redirect('/%s' % str(c.post_id))
-
-        else:
-            self.redirect('/login')
+        def get(self, comment_id):
+            if self.user:
+                key = db.Key.from_path('Comment', int(comment_id),
+                                       parent=blog_key())
+                c = db.get(key)
+                if c.author == self.user.name:
+                    c.delete()
+                    time.sleep(0.1)
+                    self.redirect('/%s' % str(c.post_id))
+    
+                else:
+                    self.redirect('/login')
 
 class BlogHome(MainHandler):
     """This class renders the main blog page."""
