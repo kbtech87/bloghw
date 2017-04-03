@@ -162,7 +162,7 @@ class NewPost(MainHandler):
 
     def post(self):
         if not self.user:
-            self.redirect('/')
+            return self.redirect('/login')
 
         subject = self.request.get('subject')
         content = self.request.get('content')
@@ -192,21 +192,26 @@ class EditPost(MainHandler):
                 self.redirect('/login')
 
     def post(self, post_id):
-        key = db.Key.from_path('Post', int(post_id), parent=blog_key())
-        post = db.get(key)
+        if self.user:
+            key = db.Key.from_path('Post', int(post_id), parent=blog_key())
+            post = db.get(key)
 
-        subject = self.request.get('subject')
-        content = self.request.get('content')
+        if post.author == self.user.name:
+            subject = self.request.get('subject')
+            content = self.request.get('content')
 
-        if subject and content:
-            post.subject = subject
-            post.content = content
-            post.put()
-            self.redirect('/%s' % str(post.key().id()))
-        else:
-            error = "subject and content, please!"
-            self.render("edit.html", subject=subject, content=content,
+            if subject and content:
+                post.subject = subject
+                post.content = content
+                post.put()
+                self.redirect('/%s' % str(post.key().id()))
+            else:
+                error = "subject and content, please!"
+                self.render("edit.html", subject=subject, content=content,
                         error=error)
+
+        else:
+                self.redirect('/login')
 
 class DeletePost(MainHandler):
     def get(self, post_id):
@@ -269,7 +274,7 @@ class NewComment(MainHandler):
         post = db.get(key)
         
         if not self.user:
-            self.redirect('/')
+            return self.redirect('/')
 
         content = self.request.get('content')
         author = self.user.name
@@ -298,20 +303,36 @@ class EditComment(MainHandler):
             self.redirect('/login')
 
     def post(self, comment_id):
+        if self.user:
+            key = db.Key.from_path('Comment', int(comment_id), parent=blog_key())
+            c = db.get(key)
+
+        if c.author == self.user.name:
+            content = self.request.get('content')
+            c.post_id = int(comment_id)
+    
+            if  content:
+                c.content = content
+                c.put()
+                self.redirect('/%s' % str(c.post_id))
+            else:
+                error = "enter your comment, please!"
+                self.render("editcomment.html", content=content,
+                            error=error)
+        else:
+            self.redirect('/login')
+
+class DeleteComment(MainHandler):
+    def get(self, comment_id):
         key = db.Key.from_path('Comment', int(comment_id), parent=blog_key())
         c = db.get(key)
-
-        content = self.request.get('content')
-        c.post_id = comment_id
-
-        if  content:
-            c.content = content
-            c.put()
+        if c.author == self.user.name:
+            c.delete()
+            time.sleep(0.1)
             self.redirect('/%s' % str(c.post_id))
+
         else:
-            error = "enter your comment, please!"
-            self.render("editcomment.html", content=content,
-                        error=error)
+            self.redirect('/login')
 
 class BlogHome(MainHandler):
     """This class renders the main blog page."""
@@ -433,5 +454,5 @@ app = webapp2.WSGIApplication([('/', BlogHome),
                                ('/liked/([0-9]+)', LikePost),
                                ('/newcomment/([0-9]+)', NewComment),
                                ('/editcomment/([0-9]+)', EditComment),
-                               #('/deletedcomment/([0-9]+)', DeleteComment)
+                               ('/deletedcomment/([0-9]+)', DeleteComment)
                                ], debug=True)
