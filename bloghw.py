@@ -248,7 +248,7 @@ class Comment(db.Model):
     created = db.DateTimeProperty(auto_now_add = True)
     last_modified = db.DateTimeProperty(auto_now = True)
     author = db.StringProperty(required = True)
-    commentid = db.IntegerProperty()
+    post_id = db.IntegerProperty()
 
     def render(self):
         self.render_text = self.content.replace('\n', '<br>')
@@ -302,6 +302,7 @@ class EditComment(MainHandler):
         c = db.get(key)
 
         content = self.request.get('content')
+        c.post_id = comment_id
 
         if  content:
             c.content = content

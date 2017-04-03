@@ -29,7 +29,7 @@
   <br><br>
   <div class='comments'>
     {% for c in comments %}
-      {% if c.commentid == post.key().id() %}
+      {% if c.post_id == post.key().id() %}
         {{ c.content | safe }}
         Author: {{ c.author }}
         <br><br>
